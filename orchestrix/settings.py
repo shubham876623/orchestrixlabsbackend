@@ -92,6 +92,12 @@ CORS_ALLOWED_ORIGINS = os.getenv(
     'http://localhost:5173,http://localhost:3000'
 ).split(',')
 
+# CSRF
+CSRF_TRUSTED_ORIGINS = os.getenv(
+    'CSRF_TRUSTED_ORIGINS',
+    'https://orchestrixlabsbackend-production.up.railway.app'
+).split(',')
+
 # DRF
 REST_FRAMEWORK = {
     'DEFAULT_RENDERER_CLASSES': ['rest_framework.renderers.JSONRenderer'],
