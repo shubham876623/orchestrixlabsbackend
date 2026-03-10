@@ -86,17 +86,14 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# CORS
-CORS_ALLOWED_ORIGINS = os.getenv(
-    'CORS_ALLOWED_ORIGINS',
-    'http://localhost:5173,http://localhost:3000,https://orchestrixlabs.com,https://www.orchestrixlabs.com'
-).split(',')
-CORS_ALLOW_HEADERS = ['content-type', 'authorization', 'x-requested-with', 'accept', 'origin']
+# CORS — allow all origins since frontend calls backend cross-origin
+CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_CREDENTIALS = True
 
 # CSRF
 CSRF_TRUSTED_ORIGINS = os.getenv(
     'CSRF_TRUSTED_ORIGINS',
-    'https://orchestrixlabsbackend-production.up.railway.app,https://orchestrixlabs.com'
+    'https://orchestrixlabsbackend-production.up.railway.app,https://orchestrixlabs.com,https://www.orchestrixlabs.com'
 ).split(',')
 
 # DRF
