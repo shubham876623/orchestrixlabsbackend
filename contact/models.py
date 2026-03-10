@@ -11,7 +11,7 @@ class ContactMessage(models.Model):
     email = models.EmailField()
     service = models.CharField(max_length=100, blank=True)
     budget = models.CharField(max_length=50, blank=True)
-    message = models.TextField()
+    message = models.TextField(blank=True, default='')
     status = models.CharField(max_length=10, choices=Status.choices, default=Status.NEW)
     ip_address = models.GenericIPAddressField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)

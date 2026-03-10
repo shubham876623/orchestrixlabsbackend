@@ -3,6 +3,8 @@ from .models import ContactMessage
 
 
 class ContactMessageSerializer(serializers.ModelSerializer):
+    message = serializers.CharField(required=False, allow_blank=True, default='')
+
     class Meta:
         model = ContactMessage
         fields = ['name', 'email', 'service', 'budget', 'message']
@@ -13,6 +15,4 @@ class ContactMessageSerializer(serializers.ModelSerializer):
         return value.strip()
 
     def validate_message(self, value):
-        if len(value.strip()) < 10:
-            raise serializers.ValidationError('Message is too short.')
         return value.strip()
