@@ -89,20 +89,20 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # CORS
 CORS_ALLOWED_ORIGINS = os.getenv(
     'CORS_ALLOWED_ORIGINS',
-    'http://localhost:5173,http://localhost:3000'
+    'http://localhost:5173,http://localhost:3000,https://orchestrixlabs.com'
 ).split(',')
 
 # CSRF
 CSRF_TRUSTED_ORIGINS = os.getenv(
     'CSRF_TRUSTED_ORIGINS',
-    'https://orchestrixlabsbackend-production.up.railway.app'
+    'https://orchestrixlabsbackend-production.up.railway.app,https://orchestrixlabs.com'
 ).split(',')
 
 # DRF
 REST_FRAMEWORK = {
     'DEFAULT_RENDERER_CLASSES': ['rest_framework.renderers.JSONRenderer'],
     'DEFAULT_THROTTLE_CLASSES': ['rest_framework.throttling.AnonRateThrottle'],
-    'DEFAULT_THROTTLE_RATES': {'anon': '10/hour'},
+    'DEFAULT_THROTTLE_RATES': {'anon': '60/hour'},
 }
 
 # Email
