@@ -1,1 +1,1 @@
-web: python manage.py migrate --noinput && python manage.py collectstatic --noinput && python manage.py seed_projects && gunicorn orchestrix.wsgi --log-file -
+web: python manage.py migrate --noinput && python manage.py collectstatic --noinput && python manage.py seed_projects && python manage.py create_superuser_if_missing && gunicorn orchestrix.wsgi --log-file -
