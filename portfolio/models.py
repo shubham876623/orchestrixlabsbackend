@@ -17,8 +17,8 @@ class Project(models.Model):
     title = models.CharField(max_length=255)
     category = models.CharField(max_length=100, choices=CATEGORY_CHOICES, db_index=True)
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.IN_PROGRESS, db_index=True)
-    summary = models.TextField()
-    description = models.TextField()
+    summary = models.TextField(blank=True, default='')
+    description = models.TextField(blank=True, default='')
     tech = models.JSONField(default=list)
     highlights = models.JSONField(default=list)
     impact = models.JSONField(default=list)
@@ -34,14 +34,22 @@ class Project(models.Model):
     # Project details
     project_value = models.CharField(max_length=50, blank=True, default='')
     hours_worked = models.PositiveIntegerField(null=True, blank=True)
+    price_type = models.CharField(max_length=20, blank=True, default='')  # "Fixed price" or "$25.00 /hr"
     start_date = models.DateField(null=True, blank=True)
     completion_date = models.DateField(null=True, blank=True)
+
+    # Extended detail fields
+    job_description = models.TextField(blank=True, default='')
+    deliverables = models.TextField(blank=True, default='')
+    live_url = models.URLField(max_length=500, blank=True, default='')
+    upwork_url = models.URLField(max_length=500, blank=True, default='')
+    images = models.JSONField(default=list, blank=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        ordering = ['order', 'id']
+        ordering = ['-completion_date', '-start_date', 'order', 'id']
         verbose_name = 'Project'
         verbose_name_plural = 'Projects'
 
