@@ -10,8 +10,13 @@ class Project(models.Model):
         ('Workflow Automation', 'Workflow Automation'),
     ]
 
+    class Status(models.TextChoices):
+        IN_PROGRESS = 'in_progress', 'In Progress'
+        COMPLETED = 'completed', 'Completed'
+
     title = models.CharField(max_length=255)
     category = models.CharField(max_length=100, choices=CATEGORY_CHOICES, db_index=True)
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.IN_PROGRESS, db_index=True)
     summary = models.TextField()
     description = models.TextField()
     tech = models.JSONField(default=list)
@@ -19,6 +24,19 @@ class Project(models.Model):
     impact = models.JSONField(default=list)
     featured = models.BooleanField(default=False, db_index=True)
     order = models.PositiveIntegerField(default=0, db_index=True)
+
+    # Client info
+    client_name = models.CharField(max_length=150, blank=True, default='')
+    rating = models.DecimalField(max_digits=2, decimal_places=1, null=True, blank=True)
+    review = models.TextField(blank=True, default='')
+    tags = models.JSONField(default=list, blank=True)
+
+    # Project details
+    project_value = models.CharField(max_length=50, blank=True, default='')
+    hours_worked = models.PositiveIntegerField(null=True, blank=True)
+    start_date = models.DateField(null=True, blank=True)
+    completion_date = models.DateField(null=True, blank=True)
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

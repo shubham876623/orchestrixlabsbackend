@@ -9,6 +9,8 @@ from rest_framework import status
 from .models import PageView, SiteStat
 from .serializers import SiteStatSerializer
 from contact.models import ContactMessage
+from portfolio.models import Project
+from portfolio.serializers import ProjectSerializer, ProjectCreateUpdateSerializer
 
 
 def _check_auth(request):
@@ -87,6 +89,10 @@ class DashboardStatsView(APIView):
         total_contacts = ContactMessage.objects.count()
         unread_contacts = ContactMessage.objects.filter(status='new').count()
 
+        total_projects = Project.objects.count()
+        in_progress_projects = Project.objects.filter(status='in_progress').count()
+        completed_projects = Project.objects.filter(status='completed').count()
+
         return Response({
             'visits': {
                 'total': total_views,
@@ -99,6 +105,11 @@ class DashboardStatsView(APIView):
                 'total': total_contacts,
                 'unread': unread_contacts,
                 'read': total_contacts - unread_contacts,
+            },
+            'projects': {
+                'total': total_projects,
+                'in_progress': in_progress_projects,
+                'completed': completed_projects,
             },
             'top_pages': list(top_pages),
         })
@@ -132,8 +143,9 @@ class DashboardContactUpdateView(APIView):
             return Response({'detail': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
 
         new_status = request.data.get('status')
-        if new_status not in ('new', 'read', 'replied', 'archived'):
-            return Response({'detail': 'Invalid status'}, status=status.HTTP_400_BAD_REQUEST)
+        valid = [c[0] for c in ContactMessage.Status.choices]
+        if new_status not in valid:
+            return Response({'detail': f'Invalid status. Must be one of: {valid}'}, status=status.HTTP_400_BAD_REQUEST)
 
         contact.status = new_status
         contact.save(update_fields=['status'])
@@ -159,3 +171,62 @@ class DashboardSiteStatUpdateView(APIView):
             serializer.save()
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+# ─── Dashboard Project CRUD ─────────────────────────────────────────────────
+
+class DashboardProjectsView(APIView):
+    """Protected — list all projects or create a new one."""
+    throttle_classes = []
+
+    def get(self, request):
+        if not _check_auth(request):
+            return Response({'detail': 'Unauthorized'}, status=status.HTTP_401_UNAUTHORIZED)
+        projects = Project.objects.all()
+        return Response(ProjectSerializer(projects, many=True).data)
+
+    def post(self, request):
+        if not _check_auth(request):
+            return Response({'detail': 'Unauthorized'}, status=status.HTTP_401_UNAUTHORIZED)
+        serializer = ProjectCreateUpdateSerializer(data=request.data)
+        if serializer.is_valid():
+            project = serializer.save()
+            return Response(ProjectSerializer(project).data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class DashboardProjectDetailView(APIView):
+    """Protected — get, update or delete a single project."""
+    throttle_classes = []
+
+    def get(self, request, pk):
+        if not _check_auth(request):
+            return Response({'detail': 'Unauthorized'}, status=status.HTTP_401_UNAUTHORIZED)
+        try:
+            project = Project.objects.get(pk=pk)
+        except Project.DoesNotExist:
+            return Response({'detail': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+        return Response(ProjectSerializer(project).data)
+
+    def patch(self, request, pk):
+        if not _check_auth(request):
+            return Response({'detail': 'Unauthorized'}, status=status.HTTP_401_UNAUTHORIZED)
+        try:
+            project = Project.objects.get(pk=pk)
+        except Project.DoesNotExist:
+            return Response({'detail': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+        serializer = ProjectCreateUpdateSerializer(project, data=request.data, partial=True)
+        if serializer.is_valid():
+            project = serializer.save()
+            return Response(ProjectSerializer(project).data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, pk):
+        if not _check_auth(request):
+            return Response({'detail': 'Unauthorized'}, status=status.HTTP_401_UNAUTHORIZED)
+        try:
+            project = Project.objects.get(pk=pk)
+        except Project.DoesNotExist:
+            return Response({'detail': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+        project.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)

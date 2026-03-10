@@ -12,10 +12,13 @@ class ProjectListView(ListAPIView):
         qs = Project.objects.all()
         featured = self.request.query_params.get('featured')
         category = self.request.query_params.get('category')
+        status = self.request.query_params.get('status')
         if featured is not None:
             qs = qs.filter(featured=True)
         if category:
             qs = qs.filter(category=category)
+        if status:
+            qs = qs.filter(status=status)
         return qs
 
 

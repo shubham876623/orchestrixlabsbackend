@@ -4,15 +4,18 @@ from django.db import models
 class ContactMessage(models.Model):
     class Status(models.TextChoices):
         NEW = 'new', 'New'
-        READ = 'read', 'Read'
-        REPLIED = 'replied', 'Replied'
+        DISCUSSION = 'discussion', 'Discussion'
+        IN_PROGRESS = 'in_progress', 'In Progress'
+        STARTED_WORK = 'started_work', 'Started Work'
+        COMPLETED = 'completed', 'Completed'
+        ARCHIVED = 'archived', 'Archived'
 
     name = models.CharField(max_length=120)
     email = models.EmailField()
     service = models.CharField(max_length=100, blank=True)
     budget = models.CharField(max_length=50, blank=True)
     message = models.TextField(blank=True, default='')
-    status = models.CharField(max_length=10, choices=Status.choices, default=Status.NEW)
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.NEW)
     ip_address = models.GenericIPAddressField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 

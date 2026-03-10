@@ -404,6 +404,7 @@ class Command(BaseCommand):
         created = 0
         updated = 0
         for data in PROJECTS:
+            data.setdefault('status', 'completed')
             obj, was_created = Project.objects.update_or_create(
                 order=data['order'],
                 defaults=data,

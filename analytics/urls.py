@@ -6,6 +6,8 @@ from .views import (
     DashboardContactsView,
     DashboardContactUpdateView,
     DashboardSiteStatUpdateView,
+    DashboardProjectsView,
+    DashboardProjectDetailView,
 )
 
 urlpatterns = [
@@ -15,4 +17,6 @@ urlpatterns = [
     path('dashboard/contacts/', DashboardContactsView.as_view(), name='dashboard-contacts'),
     path('dashboard/contacts/<int:pk>/', DashboardContactUpdateView.as_view(), name='dashboard-contact-update'),
     path('dashboard/site-stats/', DashboardSiteStatUpdateView.as_view(), name='dashboard-site-stats'),
+    path('dashboard/projects/', DashboardProjectsView.as_view(), name='dashboard-projects'),
+    path('dashboard/projects/<int:pk>/', DashboardProjectDetailView.as_view(), name='dashboard-project-detail'),
 ]
