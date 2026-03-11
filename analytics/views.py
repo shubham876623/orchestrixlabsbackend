@@ -6,8 +6,11 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 
-from .models import PageView, SiteStat
-from .serializers import SiteStatSerializer
+from .models import PageView, SiteStat, Testimonial, FAQ, InsightBadge, SiteContent
+from .serializers import (
+    SiteStatSerializer, TestimonialSerializer, FAQSerializer,
+    InsightBadgeSerializer, SiteContentSerializer,
+)
 from contact.models import ContactMessage
 from portfolio.models import Project
 from portfolio.serializers import ProjectSerializer, ProjectCreateUpdateSerializer
@@ -230,3 +233,193 @@ class DashboardProjectDetailView(APIView):
             return Response({'detail': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
         project.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+# ─── Public CMS Endpoints ─────────────────────────────────────────────────
+
+class TestimonialsPublicView(APIView):
+    throttle_classes = []
+
+    def get(self, request):
+        qs = Testimonial.objects.filter(is_active=True)
+        return Response(TestimonialSerializer(qs, many=True).data)
+
+
+class FAQPublicView(APIView):
+    throttle_classes = []
+
+    def get(self, request):
+        qs = FAQ.objects.filter(is_active=True)
+        return Response(FAQSerializer(qs, many=True).data)
+
+
+class InsightBadgesPublicView(APIView):
+    throttle_classes = []
+
+    def get(self, request):
+        qs = InsightBadge.objects.filter(is_active=True)
+        return Response(InsightBadgeSerializer(qs, many=True).data)
+
+
+class SiteContentPublicView(APIView):
+    throttle_classes = []
+
+    def get(self, request):
+        content = SiteContent.get()
+        return Response(SiteContentSerializer(content).data)
+
+
+# ─── Dashboard CMS CRUD ──────────────────────────────────────────────────
+
+class DashboardTestimonialsView(APIView):
+    throttle_classes = []
+
+    def get(self, request):
+        if not _check_auth(request):
+            return Response({'detail': 'Unauthorized'}, status=status.HTTP_401_UNAUTHORIZED)
+        return Response(TestimonialSerializer(Testimonial.objects.all(), many=True).data)
+
+    def post(self, request):
+        if not _check_auth(request):
+            return Response({'detail': 'Unauthorized'}, status=status.HTTP_401_UNAUTHORIZED)
+        serializer = TestimonialSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class DashboardTestimonialDetailView(APIView):
+    throttle_classes = []
+
+    def patch(self, request, pk):
+        if not _check_auth(request):
+            return Response({'detail': 'Unauthorized'}, status=status.HTTP_401_UNAUTHORIZED)
+        try:
+            obj = Testimonial.objects.get(pk=pk)
+        except Testimonial.DoesNotExist:
+            return Response({'detail': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+        serializer = TestimonialSerializer(obj, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, pk):
+        if not _check_auth(request):
+            return Response({'detail': 'Unauthorized'}, status=status.HTTP_401_UNAUTHORIZED)
+        try:
+            obj = Testimonial.objects.get(pk=pk)
+        except Testimonial.DoesNotExist:
+            return Response({'detail': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+        obj.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class DashboardFAQsView(APIView):
+    throttle_classes = []
+
+    def get(self, request):
+        if not _check_auth(request):
+            return Response({'detail': 'Unauthorized'}, status=status.HTTP_401_UNAUTHORIZED)
+        return Response(FAQSerializer(FAQ.objects.all(), many=True).data)
+
+    def post(self, request):
+        if not _check_auth(request):
+            return Response({'detail': 'Unauthorized'}, status=status.HTTP_401_UNAUTHORIZED)
+        serializer = FAQSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class DashboardFAQDetailView(APIView):
+    throttle_classes = []
+
+    def patch(self, request, pk):
+        if not _check_auth(request):
+            return Response({'detail': 'Unauthorized'}, status=status.HTTP_401_UNAUTHORIZED)
+        try:
+            obj = FAQ.objects.get(pk=pk)
+        except FAQ.DoesNotExist:
+            return Response({'detail': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+        serializer = FAQSerializer(obj, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, pk):
+        if not _check_auth(request):
+            return Response({'detail': 'Unauthorized'}, status=status.HTTP_401_UNAUTHORIZED)
+        try:
+            obj = FAQ.objects.get(pk=pk)
+        except FAQ.DoesNotExist:
+            return Response({'detail': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+        obj.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class DashboardBadgesView(APIView):
+    throttle_classes = []
+
+    def get(self, request):
+        if not _check_auth(request):
+            return Response({'detail': 'Unauthorized'}, status=status.HTTP_401_UNAUTHORIZED)
+        return Response(InsightBadgeSerializer(InsightBadge.objects.all(), many=True).data)
+
+    def post(self, request):
+        if not _check_auth(request):
+            return Response({'detail': 'Unauthorized'}, status=status.HTTP_401_UNAUTHORIZED)
+        serializer = InsightBadgeSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class DashboardBadgeDetailView(APIView):
+    throttle_classes = []
+
+    def patch(self, request, pk):
+        if not _check_auth(request):
+            return Response({'detail': 'Unauthorized'}, status=status.HTTP_401_UNAUTHORIZED)
+        try:
+            obj = InsightBadge.objects.get(pk=pk)
+        except InsightBadge.DoesNotExist:
+            return Response({'detail': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+        serializer = InsightBadgeSerializer(obj, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, pk):
+        if not _check_auth(request):
+            return Response({'detail': 'Unauthorized'}, status=status.HTTP_401_UNAUTHORIZED)
+        try:
+            obj = InsightBadge.objects.get(pk=pk)
+        except InsightBadge.DoesNotExist:
+            return Response({'detail': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+        obj.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class DashboardSiteContentView(APIView):
+    throttle_classes = []
+
+    def get(self, request):
+        if not _check_auth(request):
+            return Response({'detail': 'Unauthorized'}, status=status.HTTP_401_UNAUTHORIZED)
+        return Response(SiteContentSerializer(SiteContent.get()).data)
+
+    def patch(self, request):
+        if not _check_auth(request):
+            return Response({'detail': 'Unauthorized'}, status=status.HTTP_401_UNAUTHORIZED)
+        content = SiteContent.get()
+        serializer = SiteContentSerializer(content, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
