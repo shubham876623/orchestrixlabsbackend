@@ -1,13 +1,17 @@
+import re
+import hmac
 import threading
 import logging
 
 from django.conf import settings
+from django.core.cache import cache
 from django.utils import timezone
 from django.db.models import Count
 from django.db.models.functions import TruncDate
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.throttling import AnonRateThrottle
 
 from .models import PageView, SiteStat, Testimonial, FAQ, InsightBadge, SiteContent
 from .serializers import (
@@ -21,12 +25,53 @@ from portfolio.serializers import ProjectSerializer, ProjectCreateUpdateSerializ
 logger = logging.getLogger(__name__)
 
 
+class TrackingRateThrottle(AnonRateThrottle):
+    rate = '60/minute'
+
+
+class DashboardLoginThrottle(AnonRateThrottle):
+    """Strict rate limit on dashboard auth attempts to prevent brute-force."""
+    rate = '10/hour'
+    scope = 'dashboard_login'
+
+
+def _get_client_ip(request):
+    return (request.META.get('HTTP_X_FORWARDED_FOR', '').split(',')[0].strip()
+            or request.META.get('REMOTE_ADDR', ''))
+
+
 def _check_auth(request):
-    """Simple bearer token auth against DASHBOARD_SECRET."""
+    """Bearer token auth with brute-force protection."""
     secret = getattr(settings, 'DASHBOARD_SECRET', '')
+    if not secret:
+        return False  # No secret configured — reject all
+
     auth = request.headers.get('Authorization', '')
     token = auth.removeprefix('Bearer ').strip()
-    return bool(secret and token == secret)
+    if not token:
+        return False
+
+    # Rate-limit failed auth attempts per IP
+    ip = _get_client_ip(request)
+    lockout_key = f'dash_lockout:{ip}'
+    if cache.get(lockout_key):
+        return False  # IP is locked out
+
+    # Constant-time comparison to prevent timing attacks
+    if hmac.compare_digest(token, secret):
+        # Reset fail counter on success
+        cache.delete(f'dash_fails:{ip}')
+        return True
+
+    # Track failures
+    fail_key = f'dash_fails:{ip}'
+    fails = cache.get(fail_key, 0) + 1
+    cache.set(fail_key, fails, timeout=3600)
+    if fails >= 5:
+        cache.set(lockout_key, True, timeout=900)  # Lock out for 15 min after 5 failures
+        logger.warning(f'Dashboard brute-force lockout: {ip} after {fails} failed attempts')
+
+    return False
 
 
 def _parse_user_agent(ua_string):
@@ -68,11 +113,15 @@ def _resolve_geo_async(pageview_id, ip):
 
 
 class TrackPageView(APIView):
-    throttle_classes = []
+    throttle_classes = [TrackingRateThrottle]
 
     def post(self, request):
         path = request.data.get('path', '/')
         if not path or len(path) > 255:
+            return Response({'ok': False}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Sanitize path: only allow valid URL path characters (letters, digits, /, -, _, .)
+        if not re.match(r'^[a-zA-Z0-9/_\-\.#?&=%+]+$', path):
             return Response({'ok': False}, status=status.HTTP_400_BAD_REQUEST)
 
         # Skip tracking for dashboard/admin/api paths
@@ -85,23 +134,42 @@ class TrackPageView(APIView):
         ua_string = request.META.get('HTTP_USER_AGENT', '')[:500]
         device_type, browser, os_name = _parse_user_agent(ua_string)
 
-        # Frontend sends these extra fields
+        # Frontend sends these extra fields — sanitize all input
         screen_width = request.data.get('screen_width')
         screen_height = request.data.get('screen_height')
 
+        # Strip HTML tags from all string inputs to prevent stored XSS
+        def _strip_html(val, maxlen=500):
+            s = re.sub(r'<[^>]+>', '', str(val or ''))
+            return s[:maxlen]
+
+        raw_referrer = _strip_html(request.data.get('referrer', ''), 500)
+        raw_lang = _strip_html(request.data.get('language', ''), 20)
+        raw_tz = _strip_html(request.data.get('timezone', ''), 60)
+        raw_sid = _strip_html(request.data.get('session_id', ''), 64)
+
+        try:
+            sw = int(screen_width) if screen_width else None
+            sh = int(screen_height) if screen_height else None
+            # Reject unreasonable values
+            if sw and (sw < 0 or sw > 10000): sw = None
+            if sh and (sh < 0 or sh > 10000): sh = None
+        except (ValueError, TypeError):
+            sw, sh = None, None
+
         pv = PageView.objects.create(
             path=path,
-            referrer=request.data.get('referrer', '')[:500],
+            referrer=raw_referrer,
             ip_address=ip or None,
             user_agent=ua_string,
             device_type=device_type,
             browser=browser[:80],
             os=os_name[:80],
-            screen_width=int(screen_width) if screen_width else None,
-            screen_height=int(screen_height) if screen_height else None,
-            language=str(request.data.get('language', ''))[:20],
-            timezone=str(request.data.get('timezone', ''))[:60],
-            session_id=str(request.data.get('session_id', ''))[:64],
+            screen_width=sw,
+            screen_height=sh,
+            language=raw_lang,
+            timezone=raw_tz,
+            session_id=raw_sid,
         )
 
         # Resolve geo in background thread (non-blocking)
@@ -260,9 +328,15 @@ class DashboardVisitorsView(APIView):
         if date_to:
             qs = qs.filter(timestamp__date__lte=date_to)
 
-        # Pagination
-        page_num = int(request.query_params.get('page', 1))
-        per_page = min(int(request.query_params.get('per_page', 50)), 100)
+        # Pagination (safe integer parsing)
+        try:
+            page_num = max(1, int(request.query_params.get('page', 1)))
+        except (ValueError, TypeError):
+            page_num = 1
+        try:
+            per_page = min(max(1, int(request.query_params.get('per_page', 50))), 100)
+        except (ValueError, TypeError):
+            per_page = 50
         total = qs.count()
         offset = (page_num - 1) * per_page
         visitors = qs[offset:offset + per_page]

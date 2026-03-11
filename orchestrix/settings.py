@@ -8,7 +8,8 @@ load_dotenv()
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-change-me-in-production')
-DEBUG = os.getenv('DEBUG', 'True') == 'True'
+# Default to False so production is never accidentally left in debug mode
+DEBUG = os.getenv('DEBUG', 'False') == 'True'
 ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1,orchestrixlabsbackend-production.up.railway.app').split(',')
 
 INSTALLED_APPS = [
@@ -86,6 +87,9 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+# Limit request body size to 1MB (prevents oversized payload attacks)
+DATA_UPLOAD_MAX_MEMORY_SIZE = 1048576  # 1MB
+
 # ─── CORS — whitelist only your frontend domains ──────────────────────────────
 CORS_ALLOW_ALL_ORIGINS = False
 CORS_ALLOWED_ORIGINS = os.getenv(
@@ -120,8 +124,9 @@ REST_FRAMEWORK = {
     'DEFAULT_THROTTLE_CLASSES': ['rest_framework.throttling.AnonRateThrottle'],
     'DEFAULT_THROTTLE_RATES': {
         'anon': '120/hour',
-        'contact': '5/hour',
+        'contact': '3/hour',
         'dashboard': '300/hour',
+        'dashboard_login': '10/hour',
     },
 }
 
@@ -135,5 +140,5 @@ EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', '')
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
 NOTIFY_EMAIL = os.getenv('NOTIFY_EMAIL', EMAIL_HOST_USER)
 
-# Dashboard
-DASHBOARD_SECRET = os.getenv('DASHBOARD_SECRET', 'orchestrix-dashboard-2025')
+# Dashboard — MUST be set via environment variable. No guessable default.
+DASHBOARD_SECRET = os.getenv('DASHBOARD_SECRET', '')

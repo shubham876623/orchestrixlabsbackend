@@ -10,7 +10,7 @@ from .serializers import ContactMessageSerializer
 
 
 class ContactRateThrottle(AnonRateThrottle):
-    rate = '5/hour'
+    rate = '3/hour'
 
 
 def get_client_ip(request):
