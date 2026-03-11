@@ -5,7 +5,12 @@ from django.core.mail import send_mail
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.throttling import AnonRateThrottle
 from .serializers import ContactMessageSerializer
+
+
+class ContactRateThrottle(AnonRateThrottle):
+    rate = '5/hour'
 
 
 def get_client_ip(request):
@@ -36,6 +41,8 @@ def _send_notification(msg):
 
 
 class ContactView(APIView):
+    throttle_classes = [ContactRateThrottle]
+
     def post(self, request):
         serializer = ContactMessageSerializer(data=request.data)
         if not serializer.is_valid():
