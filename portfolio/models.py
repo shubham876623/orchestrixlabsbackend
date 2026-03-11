@@ -43,6 +43,7 @@ class Project(models.Model):
     deliverables = models.TextField(blank=True, default='')
     live_url = models.URLField(max_length=500, blank=True, default='')
     upwork_url = models.URLField(max_length=500, blank=True, default='')
+    video_url = models.URLField(max_length=500, blank=True, default='')
     images = models.JSONField(default=list, blank=True)
 
     created_at = models.DateTimeField(auto_now_add=True)

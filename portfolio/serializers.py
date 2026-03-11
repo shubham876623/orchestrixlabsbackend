@@ -10,7 +10,7 @@ class ProjectSerializer(serializers.ModelSerializer):
             'tech', 'highlights', 'impact', 'featured', 'order',
             'client_name', 'rating', 'review', 'tags',
             'project_value', 'hours_worked', 'price_type', 'start_date', 'completion_date',
-            'job_description', 'deliverables', 'live_url', 'upwork_url', 'images',
+            'job_description', 'deliverables', 'live_url', 'upwork_url', 'video_url', 'images',
             'created_at', 'updated_at',
         ]
 
@@ -23,5 +23,5 @@ class ProjectCreateUpdateSerializer(serializers.ModelSerializer):
             'tech', 'highlights', 'impact', 'featured', 'order',
             'client_name', 'rating', 'review', 'tags',
             'project_value', 'hours_worked', 'price_type', 'start_date', 'completion_date',
-            'job_description', 'deliverables', 'live_url', 'upwork_url', 'images',
+            'job_description', 'deliverables', 'live_url', 'upwork_url', 'video_url', 'images',
         ]
