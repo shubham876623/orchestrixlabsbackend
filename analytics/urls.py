@@ -3,6 +3,7 @@ from .views import (
     TrackPageView,
     SiteStatView,
     DashboardStatsView,
+    DashboardVisitorsView,
     DashboardContactsView,
     DashboardContactUpdateView,
     DashboardSiteStatUpdateView,
@@ -33,6 +34,7 @@ urlpatterns = [
     path('site-content/', SiteContentPublicView.as_view(), name='site-content'),
     # Dashboard
     path('dashboard/stats/', DashboardStatsView.as_view(), name='dashboard-stats'),
+    path('dashboard/visitors/', DashboardVisitorsView.as_view(), name='dashboard-visitors'),
     path('dashboard/contacts/', DashboardContactsView.as_view(), name='dashboard-contacts'),
     path('dashboard/contacts/<int:pk>/', DashboardContactUpdateView.as_view(), name='dashboard-contact-update'),
     path('dashboard/site-stats/', DashboardSiteStatUpdateView.as_view(), name='dashboard-site-stats'),

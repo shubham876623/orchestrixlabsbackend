@@ -1,3 +1,6 @@
+import threading
+import logging
+
 from django.conf import settings
 from django.utils import timezone
 from django.db.models import Count
@@ -15,6 +18,8 @@ from contact.models import ContactMessage
 from portfolio.models import Project
 from portfolio.serializers import ProjectSerializer, ProjectCreateUpdateSerializer
 
+logger = logging.getLogger(__name__)
+
 
 def _check_auth(request):
     """Simple bearer token auth against DASHBOARD_SECRET."""
@@ -22,6 +27,44 @@ def _check_auth(request):
     auth = request.headers.get('Authorization', '')
     token = auth.removeprefix('Bearer ').strip()
     return bool(secret and token == secret)
+
+
+def _parse_user_agent(ua_string):
+    """Parse user-agent string into device_type, browser, os."""
+    try:
+        from user_agents import parse
+        ua = parse(ua_string)
+        if ua.is_bot:
+            device_type = 'bot'
+        elif ua.is_mobile:
+            device_type = 'mobile'
+        elif ua.is_tablet:
+            device_type = 'tablet'
+        elif ua.is_pc:
+            device_type = 'desktop'
+        else:
+            device_type = 'other'
+        browser = f'{ua.browser.family} {ua.browser.version_string}'.strip()
+        os_name = f'{ua.os.family} {ua.os.version_string}'.strip()
+        return device_type, browser, os_name
+    except Exception:
+        return '', '', ''
+
+
+def _resolve_geo_async(pageview_id, ip):
+    """Resolve IP to country/city in background thread using ip-api.com (free, no key)."""
+    try:
+        import requests as req
+        r = req.get(f'http://ip-api.com/json/{ip}?fields=country,city', timeout=3)
+        if r.status_code == 200:
+            data = r.json()
+            if data.get('country'):
+                PageView.objects.filter(pk=pageview_id).update(
+                    country=data.get('country', '')[:100],
+                    city=data.get('city', '')[:150],
+                )
+    except Exception:
+        pass  # silently fail — geo is best-effort
 
 
 class TrackPageView(APIView):
@@ -39,12 +82,32 @@ class TrackPageView(APIView):
         ip = request.META.get('HTTP_X_FORWARDED_FOR', '').split(',')[0].strip() \
              or request.META.get('REMOTE_ADDR')
 
-        PageView.objects.create(
+        ua_string = request.META.get('HTTP_USER_AGENT', '')[:500]
+        device_type, browser, os_name = _parse_user_agent(ua_string)
+
+        # Frontend sends these extra fields
+        screen_width = request.data.get('screen_width')
+        screen_height = request.data.get('screen_height')
+
+        pv = PageView.objects.create(
             path=path,
             referrer=request.data.get('referrer', '')[:500],
             ip_address=ip or None,
-            user_agent=request.META.get('HTTP_USER_AGENT', '')[:500],
+            user_agent=ua_string,
+            device_type=device_type,
+            browser=browser[:80],
+            os=os_name[:80],
+            screen_width=int(screen_width) if screen_width else None,
+            screen_height=int(screen_height) if screen_height else None,
+            language=str(request.data.get('language', ''))[:20],
+            timezone=str(request.data.get('timezone', ''))[:60],
+            session_id=str(request.data.get('session_id', ''))[:64],
         )
+
+        # Resolve geo in background thread (non-blocking)
+        if ip:
+            threading.Thread(target=_resolve_geo_async, args=(pv.pk, ip), daemon=True).start()
+
         return Response({'ok': True})
 
 
@@ -75,6 +138,11 @@ class DashboardStatsView(APIView):
         views_week = PageView.objects.filter(timestamp__gte=week_start).count()
         views_month = PageView.objects.filter(timestamp__gte=month_start).count()
 
+        # Unique visitors (by IP or session)
+        unique_today = PageView.objects.filter(timestamp__gte=today_start).values('ip_address').distinct().count()
+        unique_week = PageView.objects.filter(timestamp__gte=week_start).values('ip_address').distinct().count()
+        unique_month = PageView.objects.filter(timestamp__gte=month_start).values('ip_address').distinct().count()
+
         top_pages = (
             PageView.objects.values('path')
             .annotate(count=Count('id'))
@@ -87,6 +155,42 @@ class DashboardStatsView(APIView):
             .values('date')
             .annotate(count=Count('id'))
             .order_by('date')
+        )
+
+        # Device breakdown (last 30 days)
+        devices = list(
+            PageView.objects.filter(timestamp__gte=month_start)
+            .exclude(device_type='')
+            .values('device_type')
+            .annotate(count=Count('id'))
+            .order_by('-count')
+        )
+
+        # Browser breakdown (last 30 days, top 8)
+        browsers = list(
+            PageView.objects.filter(timestamp__gte=month_start)
+            .exclude(browser='')
+            .values('browser')
+            .annotate(count=Count('id'))
+            .order_by('-count')[:8]
+        )
+
+        # Country breakdown (last 30 days, top 10)
+        countries = list(
+            PageView.objects.filter(timestamp__gte=month_start)
+            .exclude(country='')
+            .values('country')
+            .annotate(count=Count('id'))
+            .order_by('-count')[:10]
+        )
+
+        # Top referrers (last 30 days, top 10)
+        referrers = list(
+            PageView.objects.filter(timestamp__gte=month_start)
+            .exclude(referrer='')
+            .values('referrer')
+            .annotate(count=Count('id'))
+            .order_by('-count')[:10]
         )
 
         total_contacts = ContactMessage.objects.count()
@@ -102,7 +206,14 @@ class DashboardStatsView(APIView):
                 'today': views_today,
                 'this_week': views_week,
                 'this_month': views_month,
+                'unique_today': unique_today,
+                'unique_week': unique_week,
+                'unique_month': unique_month,
                 'daily': [{'date': str(d['date']), 'count': d['count']} for d in daily_views],
+                'devices': devices,
+                'browsers': browsers,
+                'countries': countries,
+                'referrers': referrers,
             },
             'contacts': {
                 'total': total_contacts,
@@ -115,6 +226,73 @@ class DashboardStatsView(APIView):
                 'completed': completed_projects,
             },
             'top_pages': list(top_pages),
+        })
+
+
+class DashboardVisitorsView(APIView):
+    """Protected — paginated visitor log with filtering."""
+    throttle_classes = []
+
+    def get(self, request):
+        if not _check_auth(request):
+            return Response({'detail': 'Unauthorized'}, status=status.HTTP_401_UNAUTHORIZED)
+
+        qs = PageView.objects.all()
+
+        # Filters
+        path_filter = request.query_params.get('path')
+        if path_filter:
+            qs = qs.filter(path__icontains=path_filter)
+
+        country_filter = request.query_params.get('country')
+        if country_filter:
+            qs = qs.filter(country__icontains=country_filter)
+
+        device_filter = request.query_params.get('device')
+        if device_filter:
+            qs = qs.filter(device_type=device_filter)
+
+        date_from = request.query_params.get('from')
+        if date_from:
+            qs = qs.filter(timestamp__date__gte=date_from)
+
+        date_to = request.query_params.get('to')
+        if date_to:
+            qs = qs.filter(timestamp__date__lte=date_to)
+
+        # Pagination
+        page_num = int(request.query_params.get('page', 1))
+        per_page = min(int(request.query_params.get('per_page', 50)), 100)
+        total = qs.count()
+        offset = (page_num - 1) * per_page
+        visitors = qs[offset:offset + per_page]
+
+        data = []
+        for v in visitors:
+            data.append({
+                'id': v.id,
+                'path': v.path,
+                'referrer': v.referrer,
+                'ip_address': v.ip_address,
+                'timestamp': v.timestamp.isoformat(),
+                'device_type': v.device_type,
+                'browser': v.browser,
+                'os': v.os,
+                'country': v.country,
+                'city': v.city,
+                'screen_width': v.screen_width,
+                'screen_height': v.screen_height,
+                'language': v.language,
+                'timezone': v.timezone,
+                'session_id': v.session_id,
+            })
+
+        return Response({
+            'results': data,
+            'total': total,
+            'page': page_num,
+            'per_page': per_page,
+            'total_pages': (total + per_page - 1) // per_page if total > 0 else 1,
         })
 
 

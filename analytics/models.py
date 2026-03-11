@@ -8,6 +8,24 @@ class PageView(models.Model):
     user_agent = models.CharField(max_length=500, blank=True, default='')
     timestamp = models.DateTimeField(auto_now_add=True, db_index=True)
 
+    # Parsed from user-agent
+    device_type = models.CharField(max_length=20, blank=True, default='')  # desktop, mobile, tablet, bot
+    browser = models.CharField(max_length=80, blank=True, default='')
+    os = models.CharField(max_length=80, blank=True, default='')
+
+    # Geo (resolved from IP)
+    country = models.CharField(max_length=100, blank=True, default='')
+    city = models.CharField(max_length=150, blank=True, default='')
+
+    # Sent by frontend
+    screen_width = models.PositiveIntegerField(null=True, blank=True)
+    screen_height = models.PositiveIntegerField(null=True, blank=True)
+    language = models.CharField(max_length=20, blank=True, default='')
+    timezone = models.CharField(max_length=60, blank=True, default='')
+
+    # Session tracking
+    session_id = models.CharField(max_length=64, blank=True, default='', db_index=True)
+
     class Meta:
         ordering = ['-timestamp']
         verbose_name = 'Page View'
