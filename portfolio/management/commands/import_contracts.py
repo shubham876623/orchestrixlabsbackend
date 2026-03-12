@@ -133,8 +133,13 @@ class Command(BaseCommand):
                     skipped += 1
                     continue
 
-                # Skip if already exists (by title)
+                # Skip if already exists (by title) — preserve enriched data
                 if title in existing_titles:
+                    # Update only basic CSV fields, never overwrite enrichment
+                    Project.objects.filter(title=title).update(
+                        category=categorize(title),
+                        status='in_progress' if contract_status in ('Active', 'Paused') else 'completed',
+                    )
                     skipped += 1
                     continue
 
