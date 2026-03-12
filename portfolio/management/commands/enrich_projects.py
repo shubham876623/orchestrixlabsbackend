@@ -37,6 +37,16 @@ ENRICHMENTS = [
         "deliverables": "Coded qualitative datasets using NVivo with systematic thematic analysis. Identified key themes and patterns across the data. Delivered well-structured analysis with insights aligned to academic publication standards and project requirements.",
         "tech": ["NVivo", "Qualitative Analysis", "Thematic Coding", "Research Methods"],
     },
+    {
+        "id": 26,
+        "title": "Text to CAD",
+        "rating": 5.0,
+        "review": "Good communicator, ready with innovative ideas, worked with integrity and was honest about results. Reliable collaborator.",
+        "summary": "Built an end-to-end Text-to-CAD pipeline — users describe a part in plain English and the system generates a 3D CAD model using LLM parsing and CadQuery, exposed via a FastAPI REST API.",
+        "job_description": "Client needed an AI-powered system to convert text prompts into 3D CAD models. Required an LLM-based text parser, clarification logic for missing dimensions, CAD primitive mapping, model generation with CadQuery, a REST API endpoint, error handling, testing, deployment, and documentation.",
+        "deliverables": "Built LLM-based text parser converting natural language to structured JSON specs. Implemented clarifier logic to prompt users for missing dimensions and features. Mapped structured schemas to CAD primitives and generated 3D models via CadQuery with file export. Developed FastAPI REST API with /generate-cad endpoint. Added robust error handling, unit tests, CLI tool, and deployment on cloud infrastructure with full API documentation.",
+        "tech": ["Python", "FastAPI", "CadQuery", "OpenAI API", "LangChain", "REST API", "Docker", "3D Modeling"],
+    },
 ]
 
 
