@@ -47,6 +47,36 @@ ENRICHMENTS = [
         "deliverables": "Built LLM-based text parser converting natural language to structured JSON specs. Implemented clarifier logic to prompt users for missing dimensions and features. Mapped structured schemas to CAD primitives and generated 3D models via CadQuery with file export. Developed FastAPI REST API with /generate-cad endpoint. Added robust error handling, unit tests, CLI tool, and deployment on cloud infrastructure with full API documentation.",
         "tech": ["Python", "FastAPI", "CadQuery", "OpenAI API", "LangChain", "REST API", "Docker", "3D Modeling"],
     },
+    {
+        "id": 47,
+        "title": "Research of competitor success models",
+        "rating": 5.0,
+        "review": "Experienced coder for ai related projects offering full stack development, great communicator and cooperators.",
+        "summary": "Conducted competitive analysis of existing text/voice-to-CAD models in the market — evaluated performance levels, identified gaps, and recommended a strategic pathway to success.",
+        "job_description": "Client needed to gauge the performance level of competitor 'text/voice to CAD' models that exist in the market and suggest a clear pathway to success for their own product.",
+        "deliverables": "Researched and benchmarked existing text-to-CAD and voice-to-CAD solutions. Analyzed strengths, weaknesses, and feature gaps across competitors. Delivered a comprehensive report with performance evaluations and a strategic roadmap for building a competitive product.",
+        "tech": ["Market Research", "AI/ML Analysis", "Competitive Intelligence", "CAD Technology", "Strategic Planning"],
+    },
+    {
+        "id": 69,
+        "title": "Python + PostgreSQL Project: Fetch Top-Selling Amazon Saudi Products via API",
+        "rating": 5.0,
+        "review": "Good freelancer",
+        "summary": "Built a multi-phase data pipeline to fetch top-selling products from Amazon Saudi Arabia via PA API 5.0, store in PostgreSQL, and export to CSV/Excel — scalable to 10,000+ products.",
+        "job_description": "Client needed a Python solution to fetch top-selling products from Amazon Saudi Arabia using PA API 5.0, store data in PostgreSQL with scalable schema design, handle API rate limits, and provide CSV/Excel export with full documentation.",
+        "deliverables": "Built Python script to fetch product data (title, ASIN, price, rating, sales rank, URL) from Amazon PA API with rate limiting and retry logic. Designed efficient PostgreSQL schema for products, categories, and prices scalable to 10,000+ records. Implemented CSV/Excel export and provided complete setup documentation for periodic data updates.",
+        "tech": ["Python", "PostgreSQL", "Amazon PA API 5.0", "Data Pipeline", "Rate Limiting", "CSV/Excel Export"],
+    },
+    {
+        "id": 144,
+        "title": "AI Voice Agent Integration Expert Needed for Synthflow Project",
+        "rating": 4.0,
+        "review": "Experienced coder and automation professional. Familiar with Retell AI.",
+        "summary": "Integrated AI Voice Agents using Synthflow and Retell AI for an Australian client — built seamless voice interactions as part of an ongoing development partnership to enhance AI capabilities.",
+        "job_description": "Client sought an experienced developer to integrate AI Voice Agents using Synthflow technology. Required strong understanding of voice technologies, experience creating seamless voice interactions, and interest in a long-term collaboration to enhance AI capabilities.",
+        "deliverables": "Integrated Synthflow AI voice agents with client systems. Built seamless voice interaction workflows for automated conversations. Configured Retell AI for enhanced voice processing. Established ongoing development partnership for continued AI capability improvements.",
+        "tech": ["Synthflow", "Retell AI", "Voice AI", "Python", "API Integration", "Automation"],
+    },
 ]
 
 
