@@ -81,6 +81,18 @@ def parse_price(val):
         return ''
 
 
+def parse_hourly_price_type(val):
+    """Parse hourly rate string to '$X.XX /hr' format."""
+    if not val or not val.strip():
+        return ''
+    cleaned = val.strip().replace(',', '')
+    try:
+        amount = float(cleaned)
+        return f'${amount:.2f} /hr'
+    except (ValueError, TypeError):
+        return ''
+
+
 class Command(BaseCommand):
     help = 'Import Upwork contracts from CSV into Project model'
 
@@ -125,6 +137,9 @@ class Command(BaseCommand):
                     skipped += 1
                     continue
 
+                # Parse status early; it is used for both updates and creates.
+                contract_status = row.get('Status', '').strip()
+
                 # Skip cancelled contracts
                 milestone = row.get('Milestone Status', '').strip()
                 refund = row.get('Refund status (from project funds)', '').strip()
@@ -144,7 +159,6 @@ class Command(BaseCommand):
                     continue
 
                 # Parse fields
-                contract_status = row.get('Status', '').strip()
                 contract_type = row.get('Contract type', '').strip()
                 hourly_rate = row.get('Hourly Rate', '').strip()
                 fixed_price = row.get('Fixed Price Amount Agreed', '').strip()
@@ -164,7 +178,7 @@ class Command(BaseCommand):
                     price_type = 'Fixed price'
                     project_value = parse_price(fixed_price)
                 elif hourly_rate:
-                    price_type = f'${float(hourly_rate):.2f} /hr'
+                    price_type = parse_hourly_price_type(hourly_rate)
                     project_value = ''
                 else:
                     price_type = ''
