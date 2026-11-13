@@ -1,3 +1,0 @@
-# Keep Railway/Nixpacks on a Python with prebuilt psycopg2 wheels.
-[phases.setup]
-nixPkgs = ["python312", "postgresql_17.dev"]
