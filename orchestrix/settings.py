@@ -12,6 +12,32 @@ SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-change-me-in-production')
 DEBUG = os.getenv('DEBUG', 'False') == 'True'
 ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1,orchestrixlabsbackend-production.up.railway.app').split(',')
 
+# Refuse hosted/production boot with the insecure default secret
+_is_hosted = bool(os.getenv('DATABASE_URL') or os.getenv('RAILWAY_ENVIRONMENT'))
+if _is_hosted and SECRET_KEY.startswith('django-insecure-'):
+    raise RuntimeError('SECRET_KEY must be set to a strong value in hosted environments.')
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'standard': {
+            'format': '[{levelname}] {asctime} {name}: {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'standard',
+        },
+    },
+    'loggers': {
+        'contact': {'handlers': ['console'], 'level': 'INFO', 'propagate': False},
+        'analytics': {'handlers': ['console'], 'level': 'WARNING', 'propagate': False},
+    },
+}
+
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',

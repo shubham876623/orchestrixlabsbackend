@@ -3,6 +3,8 @@ from .models import Project
 
 
 class ProjectSerializer(serializers.ModelSerializer):
+    """Full project payload for authenticated dashboard use only."""
+
     class Meta:
         model = Project
         fields = [
@@ -10,6 +12,21 @@ class ProjectSerializer(serializers.ModelSerializer):
             'tech', 'highlights', 'impact', 'featured', 'order',
             'client_name', 'rating', 'review', 'tags',
             'project_value', 'hours_worked', 'price_type', 'start_date', 'completion_date',
+            'job_description', 'deliverables', 'live_url', 'upwork_url', 'video_url', 'images',
+            'created_at', 'updated_at',
+        ]
+
+
+class PublicProjectSerializer(serializers.ModelSerializer):
+    """Public Work History / API — excludes contract financials."""
+
+    class Meta:
+        model = Project
+        fields = [
+            'id', 'title', 'category', 'status', 'summary', 'description',
+            'tech', 'highlights', 'impact', 'featured', 'order',
+            'client_name', 'rating', 'review', 'tags',
+            'start_date', 'completion_date',
             'job_description', 'deliverables', 'live_url', 'upwork_url', 'video_url', 'images',
             'created_at', 'updated_at',
         ]

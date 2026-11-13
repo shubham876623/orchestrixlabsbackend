@@ -3,11 +3,14 @@ from .models import ContactMessage
 
 
 class ContactMessageSerializer(serializers.ModelSerializer):
-    message = serializers.CharField(required=False, allow_blank=True, default='', max_length=5000)
+    # Honeypot: bots fill "website"; humans never see it. Must stay empty.
+    website = serializers.CharField(required=False, allow_blank=True, write_only=True, default='')
+    message = serializers.CharField(required=True, allow_blank=False, max_length=5000)
+    service = serializers.CharField(required=True, allow_blank=False, max_length=100)
 
     class Meta:
         model = ContactMessage
-        fields = ['name', 'email', 'service', 'budget', 'message']
+        fields = ['name', 'email', 'service', 'budget', 'message', 'website']
 
     def validate_name(self, value):
         v = value.strip()
@@ -23,5 +26,23 @@ class ContactMessageSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError('Email is too long.')
         return v
 
+    def validate_service(self, value):
+        v = (value or '').strip()
+        if len(v) < 2:
+            raise serializers.ValidationError('Please select a service.')
+        return v[:100]
+
     def validate_message(self, value):
-        return value.strip()[:5000]
+        v = (value or '').strip()
+        if len(v) < 20:
+            raise serializers.ValidationError('Please describe your project in at least a few sentences.')
+        return v[:5000]
+
+    def validate_website(self, value):
+        if value:
+            raise serializers.ValidationError('Spam detected.')
+        return ''
+
+    def create(self, validated_data):
+        validated_data.pop('website', None)
+        return super().create(validated_data)

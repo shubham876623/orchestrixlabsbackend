@@ -10,12 +10,25 @@ class ContactMessage(models.Model):
         COMPLETED = 'completed', 'Completed'
         ARCHIVED = 'archived', 'Archived'
 
+    class NotifyStatus(models.TextChoices):
+        PENDING = 'pending', 'Pending'
+        SENT = 'sent', 'Sent'
+        FAILED = 'failed', 'Failed'
+        SKIPPED = 'skipped', 'Skipped'
+
     name = models.CharField(max_length=120)
     email = models.EmailField()
     service = models.CharField(max_length=100, blank=True)
     budget = models.CharField(max_length=50, blank=True)
     message = models.TextField(blank=True, default='')
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.NEW)
+    notify_status = models.CharField(
+        max_length=20,
+        choices=NotifyStatus.choices,
+        default=NotifyStatus.PENDING,
+        help_text='Tracks whether founder email notification succeeded.',
+    )
+    notify_error = models.CharField(max_length=500, blank=True, default='')
     ip_address = models.GenericIPAddressField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 

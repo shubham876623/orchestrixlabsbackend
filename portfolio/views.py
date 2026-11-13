@@ -1,12 +1,12 @@
 from rest_framework.generics import ListAPIView, RetrieveAPIView
 from rest_framework.throttling import AnonRateThrottle
 from .models import Project
-from .serializers import ProjectSerializer
+from .serializers import PublicProjectSerializer
 
 
 class ProjectListView(ListAPIView):
-    serializer_class = ProjectSerializer
-    throttle_classes = []  # public read-only data, no throttling needed
+    serializer_class = PublicProjectSerializer
+    throttle_classes = [AnonRateThrottle]
 
     def get_queryset(self):
         qs = Project.objects.all()
@@ -24,5 +24,5 @@ class ProjectListView(ListAPIView):
 
 class ProjectDetailView(RetrieveAPIView):
     queryset = Project.objects.all()
-    serializer_class = ProjectSerializer
-    throttle_classes = []
+    serializer_class = PublicProjectSerializer
+    throttle_classes = [AnonRateThrottle]

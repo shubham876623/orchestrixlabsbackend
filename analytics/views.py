@@ -379,7 +379,8 @@ class DashboardContactsView(APIView):
             return Response({'detail': 'Unauthorized'}, status=status.HTTP_401_UNAUTHORIZED)
 
         contacts = ContactMessage.objects.all().values(
-            'id', 'name', 'email', 'service', 'budget', 'message', 'status', 'created_at', 'ip_address'
+            'id', 'name', 'email', 'service', 'budget', 'message', 'status',
+            'notify_status', 'notify_error', 'created_at', 'ip_address',
         )
         return Response(list(contacts))
 
